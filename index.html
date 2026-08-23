@@ -101,13 +101,27 @@ td.audio{ min-width:230px; }
   <!-- ==================== ABSTRACT ==================== -->
   <section class="abstract">
     <h2>Abstract</h2>
-    <p>Autoregressive music models can continue a prompt but cannot revise one. EditGen casts music
-    editing as infilling — sampling an interior window conditioned on both its prefix and its suffix —
-    reached with a single architectural change: an asymmetric span-attention mask that lets the edited
-    region attend to the whole context, past and future, while every other position keeps its ordinary
-    causal view. On top of it we add melody conditioning and — composed with MusicGen-Stem's
-    per-instrument codebooks — a stem × time editor that regenerates one chosen instrument inside one
-    chosen window. Everything is trained from scratch on two 24&nbsp;GB GPUs.</p>
+    <p>Autoregressive music generation models produce convincing clips but offer composers no way
+    to revise one: a causal decoder can only continue a prompt, never regenerate an interior window while honoring
+    what comes after it, and every such model is bounded to a context of ten to thirty seconds, far short
+     of a finished piece. This report casts editing as infilling --- sampling an interior window conditioned on both its
+      prefix and its suffix --- and reaches it with a single architectural change: an asymmetric span attention mask
+       that lets the edit window attend to the entire context, past and future, while every other position keeps its ordinary
+        causal view. Combined with an edit-mode training recipe, this turns a causal \musicgen{}-style model into
+         a native infiller without touching sampling, guidance, or decoding, and reduces exactly to the original causal
+          model as a special case. On top of this mechanism we build a composer's control layer: a cosine context
+          schedule dialing how strongly the edit adheres to each side of its context, melody conditioning via a chromagram
+           of the edit window, and a dataset-token control routed through adaptive layer normalization. The same mask,
+            composed with a stream selection over \musicgen{}-Stem's per-instrument codebooks, further yields a stem-by-time
+             editor that regenerates one chosen instrument inside one chosen window, and chaining that editor's own continuation
+              mode with its own infilling pass reaches compositions longer than any single context window --- this
+               internship's culminating goal. Every model is trained from scratch on two 48\,GB GPUs, on small, deliberately
+                mismatched corpora, and evaluated against causal and public-checkpoint baselines; a web
+                 demo at \url{https://musicgen-edit.github.io/} lets listeners audition edits interactively. Results confirm
+                  each mechanism behaves as the method predicts, while underscoring how much remains provisional at this
+                   scale and sample size --- a deliberate trade-off for a technique meant to remain reachable outside
+                    an industrial compute budget.
+    Everything is trained from scratch on two 24&nbsp;GB GPUs.</p>
   </section>
 
   <!-- ================================================================
