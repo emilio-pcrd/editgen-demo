@@ -1,0 +1,344 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>EditGen — Controllable Autoregressive Music Editing</title>
+<link rel="shortcut icon" type="image/png" href="favicon.png">
+<style>
+:root{
+  --ink:#1a1a1a; --muted:#6b7280; --line:#e6e8ec;
+  --soft:#f6f7f9; --accent:#2b5c9e; --accent-soft:#eaf0f8;
+}
+*{ box-sizing:border-box; }
+html{ -webkit-text-size-adjust:100%; }
+body{
+  margin:0; color:var(--ink); background:#fff;
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  line-height:1.55;
+}
+.wrap{ max-width:900px; margin:0 auto; padding:2.5rem 1.25rem 4rem; }
+
+/* ---- hero ---- */
+.hero{ text-align:center; margin:1rem 0 2.25rem; }
+.hero h1{ font-size:2rem; font-weight:700; line-height:1.2; margin:0 0 .85rem; }
+.authors{ font-size:1.05rem; margin:.15rem 0; }
+.affil{ color:var(--muted); margin:.1rem 0; }
+.links{ display:flex; flex-wrap:wrap; gap:.55rem; justify-content:center; margin:1.25rem 0 0; }
+.links a{
+  display:inline-block; padding:.5rem .95rem; border:1px solid var(--line);
+  border-radius:999px; color:var(--ink); text-decoration:none; font-size:.92rem;
+  background:#fff; transition:all .15s ease;
+}
+.links a:hover{ border-color:var(--accent); color:var(--accent); background:var(--accent-soft); }
+
+/* ---- abstract ---- */
+.abstract{
+  background:var(--soft); border:1px solid var(--line); border-radius:14px;
+  padding:1.1rem 1.35rem; margin:0 0 1rem;
+}
+.abstract h2{ margin:0 0 .5rem; font-size:.8rem; letter-spacing:.08em; text-transform:uppercase; color:var(--muted); font-weight:700; }
+.abstract p{ margin:0; color:#333; }
+
+/* ---- sections ---- */
+h2.section{ font-size:1.5rem; font-weight:700; margin:2.8rem 0 .4rem; padding-bottom:.4rem; border-bottom:2px solid var(--accent); }
+h3.sub{ font-size:1.15rem; font-weight:700; margin:2rem 0 .3rem; }
+.desc{ color:var(--muted); margin:.15rem 0 1.1rem; }
+
+/* ---- audio players ---- */
+.player{ background:var(--soft); border:1px solid var(--line); border-radius:10px; padding:.3rem .4rem; }
+.player audio{ width:100%; height:36px; display:block; }
+
+/* ---- generation grid ---- */
+.grid{ display:grid; grid-template-columns:repeat(2,1fr); gap:1rem; margin:0 0 1rem; }
+.card{ border:1px solid var(--line); border-radius:14px; padding:1rem; }
+.card .label{ font-weight:600; margin-bottom:.55rem; }
+
+/* ---- tables ---- */
+.table-wrap{ overflow-x:auto; margin:0 0 1rem; }
+table.samples{ width:100%; border-collapse:collapse; min-width:560px; }
+table.samples th, table.samples td{ padding:.6rem .7rem; border-bottom:1px solid var(--line); vertical-align:middle; text-align:left; }
+table.samples thead th{ font-size:.76rem; letter-spacing:.03em; text-transform:uppercase; color:var(--muted); font-weight:700; border-bottom:2px solid var(--line); white-space:nowrap; }
+table.samples tbody tr:hover{ background:var(--soft); }
+td.audio{ min-width:230px; }
+.ex{ font-weight:600; }
+.ex-sub{ display:block; font-size:.82rem; color:var(--muted); font-weight:400; margin-top:.2rem; }
+
+/* prompts & tags */
+.prompt{ font-style:italic; color:#333; }
+.tag{ display:inline-block; font-size:.7rem; font-weight:700; letter-spacing:.03em; text-transform:uppercase; padding:.12rem .5rem; border-radius:999px; background:var(--accent-soft); color:var(--accent); }
+.tag.muted{ background:#eef0f2; color:var(--muted); }
+.dash{ color:var(--muted); }
+
+/* stems */
+.stem{ border:1px solid var(--line); border-radius:14px; padding:1rem 1.1rem 1.15rem; margin:0 0 1.1rem; }
+.stem h3{ font-size:1.05rem; margin:0 0 .15rem; }
+.stem .cond{ color:var(--muted); margin:0 0 .85rem; font-size:.9rem; }
+
+.note{ color:var(--muted); font-size:.9rem; border-top:1px solid var(--line); padding-top:1rem; margin-top:2.75rem; }
+
+@media (max-width:640px){
+  .grid{ grid-template-columns:1fr; }
+  .hero h1{ font-size:1.6rem; }
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <!-- ==================== HERO ==================== -->
+  <header class="hero">
+    <h1>Controllable Autoregressive Music Editing</h1>
+    <p class="authors">Emilio Picard, Guillaume Doras</p>
+    <p class="affil">IRCAM · STMS Lab</p>
+    <nav class="links">
+      <a href="PICARD_Emilio_Memoire_Stage.pdf" target="_blank" rel="noopener">📄 Report (PDF)</a>
+      <a href="https://github.com/emilio-pcrd/music-stem-edit/tree/main" target="_blank" rel="noopener">💻 Code</a>
+      <a href="https://github.com/emilio-pcrd/music-stem-edit/tree/main/app" target="_blank" rel="noopener">🎛️ Stem Studio</a>
+    </nav>
+  </header>
+
+  <!-- ==================== ABSTRACT ==================== -->
+  <section class="abstract">
+    <h2>Abstract</h2>
+    <p>Autoregressive music models can continue a prompt but cannot revise one. EditGen casts music
+    editing as infilling — sampling an interior window conditioned on both its prefix and its suffix —
+    reached with a single architectural change: an asymmetric span-attention mask that lets the edited
+    region attend to the whole context, past and future, while every other position keeps its ordinary
+    causal view. On top of it we add melody conditioning and — composed with MusicGen-Stem's
+    per-instrument codebooks — a stem × time editor that regenerates one chosen instrument inside one
+    chosen window. Everything is trained from scratch on two 24&nbsp;GB GPUs.</p>
+  </section>
+
+  <!-- ================================================================
+    AUDIO FILES — drop .mp3 (or .wav) into  audio/<section>/  keeping the
+    src filenames below in sync. Empty players are intentional placeholders
+    so the layout can be checked before the clips are ready. Paths are
+    relative, so the page works locally and on GitHub Pages alike.
+  ================================================================= -->
+
+  <!-- ==================== INTRODUCTION ==================== -->
+  <h2 class="section">Introduction</h2>
+  <p class="desc">Baseline generation capabilities of the MusicGen backbone, trained from scratch on
+  our corpus. These set the reference point for the editing contribution below.</p>
+
+  <h3 class="sub">Unconditional generation</h3>
+  <p class="desc">Free samples drawn from the model with no conditioning of any kind.</p>
+  <div class="grid">
+    <div class="card">
+      <div class="label">Sample 1</div>
+      <div class="player"><audio controls preload="none" src="audio/generation/ex1_gen.mp3"></audio></div>
+    </div>
+    <div class="card">
+      <div class="label">Sample 2</div>
+      <div class="player"><audio controls preload="none" src="audio/generation/ex2_gen.mp3"></audio></div>
+    </div>
+  </div>
+
+  <h3 class="sub">Continuation</h3>
+  <p class="desc">The first 2.5 s of each clip are used as context; the remaining seconds are
+  generated by the model.</p>
+  <div class="grid">
+    <div class="card">
+      <div class="label">Sample 1</div>
+      <div class="player"><audio controls preload="none" src="audio/continuation/ex1_cont.wav"></audio></div>
+    </div>
+    <div class="card">
+      <div class="label">Sample 2</div>
+      <div class="player"><audio controls preload="none" src="audio/continuation/ex2_cont.wav"></audio></div>
+    </div>
+    <div class="card">
+      <div class="label">Sample 3</div>
+      <div class="player"><audio controls preload="none" src="audio/continuation/ex3_cont.wav"></audio></div>
+    </div>
+    <div class="card">
+      <div class="label">Sample 4</div>
+      <div class="player"><audio controls preload="none" src="audio/continuation/ex4_cont.wav"></audio></div>
+    </div>
+  </div>
+
+  <h3 class="sub">Text-to-music</h3>
+  <p class="desc">Generation conditioned on a free-text description.</p>
+  <div class="table-wrap">
+  <table class="samples">
+    <thead><tr><th>Text prompt</th><th>Generated (ours)</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><span class="prompt">“This track is a lively jazz fusion piece featuring piano and guitar, exuding an upbeat, energetic mood”</span></td>
+        <td class="audio"><div class="player"><audio controls preload="none" src="audio/text2music/ex1_gen.mp3"></audio></div></td>
+      </tr>
+      <tr>
+        <td><span class="prompt">“This is a soundtrack piece in the easy listening genre featuring a piano as the main instrument, conveying a Christmas mood”</span></td>
+        <td class="audio"><div class="player"><audio controls preload="none" src="audio/text2music/ex2_gen.mp3"></audio></div></td>
+      </tr>
+      <tr>
+        <td><span class="prompt">“This is a lofi track with smooth drums and vinyl background noise”</span></td>
+        <td class="audio"><div class="player"><audio controls preload="none" src="audio/text2music/ex3_gen.wav"></audio></div></td>
+      </tr>
+      <tr>
+        <td><span class="prompt">“This is a lively jazz piece featuring piano, guitar, and drums, conveying an upbeat mood suitable for swing dancing”</span></td>
+        <td class="audio"><div class="player"><audio controls preload="none" src="audio/text2music/ex4_gen.mp3"></audio></div></td>
+      </tr>
+    </tbody>
+  </table>
+  </div>
+
+  <h3 class="sub">Melody conditioning</h3>
+  <p class="desc">Generation that follows a target melody line. The melody input is provided so it can
+  be compared against the result.</p>
+  <div class="table-wrap">
+  <table class="samples">
+    <thead><tr><th>Example</th><th>Target melody (input)</th><th>Generated (ours)</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><span class="ex">Example 1</span></td>
+        <td class="audio"><div class="player"><audio controls preload="none" src="audio/melody/ex1_melody.mp3"></audio></div></td>
+        <td class="audio"><div class="player"><audio controls preload="none" src="audio/melody/ex1_ours.mp3"></audio></div></td>
+      </tr>
+      <tr>
+        <td><span class="ex">Example 2</span></td>
+        <td class="audio"><div class="player"><audio controls preload="none" src="audio/melody/ex2_melody.mp3"></audio></div></td>
+        <td class="audio"><div class="player"><audio controls preload="none" src="audio/melody/ex2_ours.mp3"></audio></div></td>
+      </tr>
+    </tbody>
+  </table>
+  </div>
+
+  <!-- ==================== SCHAEFFER (AdaLN) ==================== -->
+  <h2 class="section">Style routing — Schaeffer (AdaLN)</h2>
+  <p class="desc">Forcing the <code>schaeffer</code> dataset token — routed through adaptive layer
+  normalisation (AdaLN) — steers the model toward musique-concrète material in the vein of Pierre
+  Schaeffer. It picks up diversity from the large corpus and style from only ~30&nbsp;min of Schaeffer.
+  To show the model does <strong>not overfit</strong> those few minutes, each output is paired with a
+  reference recording from the training set — the generations keep the style yet clearly differ from the
+  references.</p>
+
+  <h3 class="sub">From a text prompt</h3>
+  <p class="desc">Text-conditioned generation with the <code>schaeffer</code> token, next to a reference
+  from the training corpus.</p>
+  <div class="table-wrap">
+  <table class="samples">
+    <thead><tr><th>Text prompt</th><th>Reference (training)</th><th>Generated (ours)</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><span class="prompt">“musique concrète: metallic scrapes and resonant drones, sparse and abstract”</span></td>
+        <td class="audio"><div class="player"><audio controls preload="none" src="audio/schaeffer/prompt/ex1_ref.wav"></audio></div></td>
+        <td class="audio"><div class="player"><audio controls preload="none" src="audio/schaeffer/prompt/ex1_ours.wav"></audio></div></td>
+      </tr>
+      <tr>
+        <td><span class="prompt">“concrète texture: looped mechanical noises evolving over a low rumble”</span></td>
+        <td class="audio"><div class="player"><audio controls preload="none" src="audio/schaeffer/prompt/ex2_ref.wav"></audio></div></td>
+        <td class="audio"><div class="player"><audio controls preload="none" src="audio/schaeffer/prompt/ex2_ours.wav"></audio></div></td>
+      </tr>
+    </tbody>
+  </table>
+  </div>
+
+  <h3 class="sub">Continuation</h3>
+  <p class="desc">The model continues a reference excerpt while the <code>schaeffer</code> token holds
+  the style — developing new material rather than replaying the reference.</p>
+  <div class="table-wrap">
+  <table class="samples">
+    <thead><tr><th>Example</th><th>Reference (training)</th><th>Continuation (ours)</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><span class="ex">Example 1</span></td>
+        <td class="audio"><div class="player"><audio controls preload="none" src="audio/schaeffer/continuation/ex1_ref.wav"></audio></div></td>
+        <td class="audio"><div class="player"><audio controls preload="none" src="audio/schaeffer/continuation/ex1_ours.wav"></audio></div></td>
+      </tr>
+    </tbody>
+  </table>
+  </div>
+
+  <!-- ==================== CONTRIBUTION ==================== -->
+  <h2 class="section">Editing by infilling</h2>
+  <p class="desc">Our contribution. The segment from <strong>4 s to 8 s of a 10 s clip</strong> is
+  regenerated while the surrounding audio (prefix and suffix) is held fixed, so the infill draws on both
+  past and future context. It can be steered by a melody line, by text, or left free, and each example
+  is shown against its ground truth. These results come from a model trained for only
+  <strong>100,000 steps at batch size 48</strong>.</p>
+  <div class="table-wrap">
+  <table class="samples">
+    <thead><tr><th>Example</th><th>Conditioning</th><th>Ground truth</th><th>Ours — infilled</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><span class="ex">Example 1</span><span class="ex-sub"><span class="tag">melody</span></span></td>
+        <td class="audio"><div class="player"><audio controls preload="none" src="audio/infilling/ex1_melody.wav"></audio></div></td>
+        <td class="audio"><div class="player"><audio controls preload="none" src="audio/infilling/ex1_truth.wav"></audio></div></td>
+        <td class="audio"><div class="player"><audio controls preload="none" src="audio/infilling/ex1_ours.wav"></audio></div></td>
+      </tr>
+      <tr>
+        <td><span class="ex">Example 2</span><span class="ex-sub"><span class="tag">text</span></span></td>
+        <td><span class="prompt">“solo saxophone improvisation over the same chords”</span></td>
+        <td class="audio"><div class="player"><audio controls preload="none" src="audio/infilling/ex2_truth.wav"></audio></div></td>
+        <td class="audio"><div class="player"><audio controls preload="none" src="audio/infilling/ex2_ours.wav"></audio></div></td>
+      </tr>
+      <tr>
+        <td><span class="ex">Example 3</span><span class="ex-sub"><span class="tag muted">unconditioned</span></span></td>
+        <td><span class="dash">— no conditioning</span></td>
+        <td class="audio"><div class="player"><audio controls preload="none" src="audio/infilling/ex3_truth.wav"></audio></div></td>
+        <td class="audio"><div class="player"><audio controls preload="none" src="audio/infilling/ex3_ours.wav"></audio></div></td>
+      </tr>
+    </tbody>
+  </table>
+  </div>
+
+  <!-- ==================== STEMS ==================== -->
+  <h2 class="section">Per-stem editing</h2>
+  <p class="desc">Composed with MusicGen-Stem's per-instrument codebooks, the infiller regenerates a
+  single stem inside a chosen window while every other stem is held fixed — steered by a melody line or
+  a text description. The examples below edit the bass, the melody, and the vocal stem in turn.</p>
+
+  <div class="stem">
+    <h3>Bass stem</h3>
+    <p class="cond">Conditioning: <span class="tag">text</span> <span class="prompt">“a deep, groovy synth bassline”</span></p>
+    <div class="table-wrap">
+    <table class="samples">
+      <thead><tr><th>Original mix</th><th>Regenerated stem</th><th>New mix (ours)</th></tr></thead>
+      <tbody><tr>
+        <td class="audio"><div class="player"><audio controls preload="none" src="audio/stems/bass_original.mp3"></audio></div></td>
+        <td class="audio"><div class="player"><audio controls preload="none" src="audio/stems/bass_stem.mp3"></audio></div></td>
+        <td class="audio"><div class="player"><audio controls preload="none" src="audio/stems/bass_newmix.mp3"></audio></div></td>
+      </tr></tbody>
+    </table>
+    </div>
+  </div>
+
+  <div class="stem">
+    <h3>Melody stem</h3>
+    <p class="cond">Conditioning: <span class="tag">melody</span> — target melody line provided below</p>
+    <div class="table-wrap">
+    <table class="samples">
+      <thead><tr><th>Target melody (input)</th><th>Original mix</th><th>Regenerated stem</th><th>New mix (ours)</th></tr></thead>
+      <tbody><tr>
+        <td class="audio"><div class="player"><audio controls preload="none" src="audio/stems/melody_melody.mp3"></audio></div></td>
+        <td class="audio"><div class="player"><audio controls preload="none" src="audio/stems/melody_original.mp3"></audio></div></td>
+        <td class="audio"><div class="player"><audio controls preload="none" src="audio/stems/melody_stem.mp3"></audio></div></td>
+        <td class="audio"><div class="player"><audio controls preload="none" src="audio/stems/melody_newmix.mp3"></audio></div></td>
+      </tr></tbody>
+    </table>
+    </div>
+  </div>
+
+  <div class="stem">
+    <h3>Vocal stem</h3>
+    <p class="cond">Conditioning: <span class="tag">text</span> <span class="prompt">“a soft female vocal humming a gentle melody”</span></p>
+    <div class="table-wrap">
+    <table class="samples">
+      <thead><tr><th>Original mix</th><th>Regenerated stem</th><th>New mix (ours)</th></tr></thead>
+      <tbody><tr>
+        <td class="audio"><div class="player"><audio controls preload="none" src="audio/stems/voice_original.mp3"></audio></div></td>
+        <td class="audio"><div class="player"><audio controls preload="none" src="audio/stems/voice_stem.mp3"></audio></div></td>
+        <td class="audio"><div class="player"><audio controls preload="none" src="audio/stems/voice_newmix.mp3"></audio></div></td>
+      </tr></tbody>
+    </table>
+    </div>
+  </div>
+
+  <p class="note">Audio examples are being generated; the empty players above are placeholders and will
+  play once the clips are dropped into <code>audio/</code>. See <code>README.md</code> for the expected
+  filenames.</p>
+
+</div>
+</body>
+</html>

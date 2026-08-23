@@ -1,0 +1,11 @@
+Text associated to ex1_cont:
+"This track is a lively jazz fusion piece featuring piano and guitar, exuding an upbeat, energetic mood"
+
+Text associated to ex2_cont:
+"This is a soundtrack piece in the easy listening genre featuring a piano as the main instrument, conveying a Christmas mood"
+
+Text associated to ex3_cont:
+"This is a lofi track with smooth drums and vinyl background noise"
+
+Text associated to ex4_cont:
+"This is a lively jazz piece featuring piano, guitar, and drums, conveying an upbeat mood suitable for swing dancing"
