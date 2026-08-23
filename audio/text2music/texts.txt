@@ -9,3 +9,9 @@ Text associated to ex3_cont:
 
 Text associated to ex4_cont:
 "This is a lively jazz piece featuring piano, guitar, and drums, conveying an upbeat mood suitable for swing dancing"
+
+Text associated to ex5_gen:
+"this song is a slow jazz music with smooth drums._adaln_text2music"
+
+Text associated to ex6_gen:
+"this is a jazz walking bass with few small drums as accompaniement"

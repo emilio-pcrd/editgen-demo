@@ -13,7 +13,7 @@ entries in `index.html`. Empty players are intentional placeholders until the cl
 ```
 audio/generation/    ex1_gen.mp3   ex2_gen.mp3
 audio/continuation/  ex1_cont.wav  ex2_cont.wav  ex3_cont.wav  ex4_cont.wav   (single clip: first 2.5 s = context, rest generated)
-audio/text2music/    ex1_gen.mp3  ex2_gen.mp3  ex3_gen.wav  ex4_gen.mp3   (+ texts.txt holds the prompts)
+audio/text2music/    ex1_gen.mp3  ex2_gen.mp3  ex3_gen.wav  ex4_gen.mp3  ex5_gen.wav  ex6_gen.wav   (+ texts.txt holds the prompts)
 audio/melody/        ex1_melody.mp3  ex1_ours.mp3   ex2_melody.mp3  ex2_ours.mp3
 audio/infilling/     ex1_melody.wav  ex1_truth.wav  ex1_ours.wav    (ex1 = melody-conditioned)
                      ex2_truth.wav   ex2_ours.wav                   (ex2 = text-conditioned)
