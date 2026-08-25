@@ -205,51 +205,32 @@ td.audio{ min-width:230px; }
   </table>
   </div>
 
-  <h3 class="sub">Melody conditioning</h3>
-  <p class="desc">Generation that follows a target melody line. The melody input is provided so it can
-  be compared against the result.</p>
-  <div class="table-wrap">
-  <table class="samples">
-    <thead><tr><th>Example</th><th>Target melody (input)</th><th>Generated (ours)</th></tr></thead>
-    <tbody>
-      <tr>
-        <td><span class="ex">Example 1</span></td>
-        <td class="audio"><div class="player"><audio controls preload="none" src="audio/melody/ex1_melody.mp3"></audio></div></td>
-        <td class="audio"><div class="player"><audio controls preload="none" src="audio/melody/ex1_ours.mp3"></audio></div></td>
-      </tr>
-      <tr>
-        <td><span class="ex">Example 2</span></td>
-        <td class="audio"><div class="player"><audio controls preload="none" src="audio/melody/ex2_melody.mp3"></audio></div></td>
-        <td class="audio"><div class="player"><audio controls preload="none" src="audio/melody/ex2_ours.mp3"></audio></div></td>
-      </tr>
-    </tbody>
-  </table>
-  </div>
-
   <!-- ==================== SCHAEFFER (AdaLN) ==================== -->
-  <h2 class="section">Style routing — Schaeffer (AdaLN)</h2>
+  <h2 class="section">Dataset steering — Schaeffer token (AdaLN)</h2>
   <p class="desc">Forcing the <code>schaeffer</code> dataset token — routed through adaptive layer
-  normalisation (AdaLN) — steers the model toward musique-concrète material in the vein of Pierre
-  Schaeffer. It picks up diversity from the large corpus and style from only ~30&nbsp;min of Schaeffer.
-  To show the model does <strong>not overfit</strong> those few minutes, each output is paired with a
-  reference recording from the training set — the generations keep the style yet clearly differ from the
-  references.</p>
+  normalisation (AdaLN) — steers the model toward a tiny target dataset (here called
+  <code>schaeffer</code>). The point is that it adopts that dataset's character
+  <strong>without overfitting</strong> its few examples, keeping the diversity learned from the large
+  corpus. To make that checkable, each output is shown next to a reference drawn from the tiny dataset —
+  the generations clearly differ from the references rather than reproducing them.</p>
 
   <h3 class="sub">From a text prompt</h3>
-  <p class="desc">Text-conditioned generation with the <code>schaeffer</code> token, next to a reference
-  from the training corpus.</p>
+  <p class="desc">Each caption is taken from a real piece of the tiny <code>schaeffer</code> dataset (the
+  ground truth); the model then generates from that caption with the <code>schaeffer</code> token active.
+  The output keeps the dataset's character yet clearly differs from the ground truth — it is not
+  memorising those few examples.</p>
   <div class="table-wrap">
   <table class="samples">
-    <thead><tr><th>Text prompt</th><th>Reference (training)</th><th>Generated (ours)</th></tr></thead>
+    <thead><tr><th>Text prompt</th><th>Ground truth</th><th>Generated (ours)</th></tr></thead>
     <tbody>
       <tr>
-        <td><span class="prompt">“musique concrète: metallic scrapes and resonant drones, sparse and abstract”</span></td>
-        <td class="audio"><div class="player"><audio controls preload="none" src="audio/schaeffer/prompt/ex1_ref.wav"></audio></div></td>
+        <td><span class="prompt">“Inharmonic band of sine waves with different amplitude envelopes and offsets of harmonics. cold and evil”</span></td>
+        <td class="audio"><div class="player"><audio controls preload="none" src="audio/schaeffer/prompt/danilo_gervasoni_2.wav"></audio></div></td>
         <td class="audio"><div class="player"><audio controls preload="none" src="audio/schaeffer/prompt/ex1_ours.wav"></audio></div></td>
       </tr>
       <tr>
-        <td><span class="prompt">“concrète texture: looped mechanical noises evolving over a low rumble”</span></td>
-        <td class="audio"><div class="player"><audio controls preload="none" src="audio/schaeffer/prompt/ex2_ref.wav"></audio></div></td>
+        <td><span class="prompt">“Steampunk war. futuristic guns shooting. sci-fi. science fiction. gaming. sound effect”</span></td>
+        <td class="audio"><div class="player"><audio controls preload="none" src="audio/schaeffer/prompt/danilo_gervasoni_17.wav"></audio></div></td>
         <td class="audio"><div class="player"><audio controls preload="none" src="audio/schaeffer/prompt/ex2_ours.wav"></audio></div></td>
       </tr>
     </tbody>
@@ -257,8 +238,8 @@ td.audio{ min-width:230px; }
   </div>
 
   <h3 class="sub">Continuation</h3>
-  <p class="desc">The model continues a reference excerpt while the <code>schaeffer</code> token holds
-  the style — developing new material rather than replaying the reference.</p>
+  <p class="desc">The model continues a reference excerpt with the <code>schaeffer</code> token active —
+  producing new material rather than replaying the reference.</p>
   <div class="table-wrap">
   <table class="samples">
     <thead><tr><th>Example</th><th>Reference (training)</th><th>Continuation (ours)</th></tr></thead>
@@ -285,21 +266,15 @@ td.audio{ min-width:230px; }
     <tbody>
       <tr>
         <td><span class="ex">Example 1</span><span class="ex-sub"><span class="tag">melody</span></span></td>
-        <td class="audio"><div class="player"><audio controls preload="none" src="audio/infilling/ex1_melody.wav"></audio></div></td>
+        <td class="audio"><div class="player"><audio controls preload="none" src="audio/infilling/ex1_melody.mp3"></audio></div></td>
         <td class="audio"><div class="player"><audio controls preload="none" src="audio/infilling/ex1_truth.wav"></audio></div></td>
         <td class="audio"><div class="player"><audio controls preload="none" src="audio/infilling/ex1_ours.wav"></audio></div></td>
       </tr>
       <tr>
-        <td><span class="ex">Example 2</span><span class="ex-sub"><span class="tag">text</span></span></td>
-        <td><span class="prompt">“solo saxophone improvisation over the same chords”</span></td>
+        <td><span class="ex">Example 2</span><span class="ex-sub"><span class="tag muted">unconditioned</span></span></td>
+        <td><span class="dash">— no conditioning</span></td>
         <td class="audio"><div class="player"><audio controls preload="none" src="audio/infilling/ex2_truth.wav"></audio></div></td>
         <td class="audio"><div class="player"><audio controls preload="none" src="audio/infilling/ex2_ours.wav"></audio></div></td>
-      </tr>
-      <tr>
-        <td><span class="ex">Example 3</span><span class="ex-sub"><span class="tag muted">unconditioned</span></span></td>
-        <td><span class="dash">— no conditioning</span></td>
-        <td class="audio"><div class="player"><audio controls preload="none" src="audio/infilling/ex3_truth.wav"></audio></div></td>
-        <td class="audio"><div class="player"><audio controls preload="none" src="audio/infilling/ex3_ours.wav"></audio></div></td>
       </tr>
     </tbody>
   </table>
