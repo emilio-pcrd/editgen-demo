@@ -75,6 +75,13 @@ td.audio{ min-width:230px; }
 .stem{ border:1px solid var(--line); border-radius:14px; padding:1rem 1.1rem 1.15rem; margin:0 0 1.1rem; }
 .stem h3{ font-size:1.05rem; margin:0 0 .15rem; }
 .stem .cond{ color:var(--muted); margin:0 0 .85rem; font-size:.9rem; }
+.card.mix{ margin:0 0 1rem; }
+
+/* edited-region bar */
+.span{ position:relative; height:7px; border-radius:999px; background:#e3e6ea; margin:.5rem 0 .25rem; min-width:120px; }
+.span i{ position:absolute; top:0; bottom:0; border-radius:999px; background:var(--accent); }
+.range{ font-size:.78rem; color:var(--muted); white-space:nowrap; }
+td.region{ min-width:150px; }
 
 .note{ color:var(--muted); font-size:.9rem; border-top:1px solid var(--line); padding-top:1rem; margin-top:2.75rem; }
 
@@ -104,9 +111,9 @@ td.audio{ min-width:230px; }
     <h2>Abstract</h2>
     <p> Autoregressive music generation models produce convincing clips but offer composers no way to revise one: a causal decoder can only continue a prompt, never regenerate an interior window while honoring what comes after it, and every such model is bounded to a context of thirty seconds, far short of a finished piece. While several methods proposed to extend the generation up to a 3 min clip, it cannot able to regenerate only a part of the sample.</p>
 
-    </p>This report casts editing as infilling --- sampling an interior window conditioned on both its prefix and its suffix --- and reaches it with a single architectural change: an asymmetric span attention mask that lets the edit window attend to the entire context, past and future, while every other position keeps its ordinary causal view. Combined with an edit-mode training recipe, this turns a causal musicgen-style model into a native infiller without touching sampling, guidance, or decoding, and reduces exactly to the original causal model as a special case. On top of this mechanism we build a composer's control layer: a cosine context schedule dialing how strongly the edit adheres to each side of its context, melody conditioning via a chromagram of the edit window, and a dataset-token control routed through adaptive layer normalization.</p>
+    <p>This report casts editing as infilling --- sampling an interior window conditioned on both its prefix and its suffix --- and reaches it with a single architectural change: an asymmetric span attention mask that lets the edit window attend to the entire context, past and future, while every other position keeps its ordinary causal view. Combined with an edit-mode training recipe, this turns a causal musicgen-style model into a native infiller without touching sampling, guidance, or decoding, and reduces exactly to the original causal model as a special case. On top of this mechanism we build a composer's control layer: a cosine context schedule dialing how strongly the edit adheres to each side of its context, melody conditioning via a chromagram of the edit window, and a dataset-token control routed through adaptive layer normalization.</p>
 
-    </p>The same mask, composed with a stream selection over musicgen-stem's per-instrument codebooks, further yields a stem-by-time editor that regenerates one chosen instrument inside one chosen window, and chaining that editor's own continuation mode with its own infilling pass reaches compositions longer than any single context window --- this internship's culminating goal. Every model is trained from scratch on two 48\,GB GPUs, on small, deliberately mismatched corpora, and evaluated against causal and public-checkpoint baselines.</p>
+    <p>The same mask, composed with a stream selection over musicgen-stem's per-instrument codebooks, further yields a stem-by-time editor that regenerates one chosen instrument inside one chosen window, and chaining that editor's own continuation mode with its own infilling pass reaches compositions longer than any single context window --- this internship's culminating goal. Every model is trained from scratch on two 48\,GB GPUs, on small, deliberately mismatched corpora, and evaluated against causal and public-checkpoint baselines.</p>
   </section>
 
   <!-- ================================================================
@@ -270,6 +277,120 @@ td.audio{ min-width:230px; }
         <td><span class="dash">— no conditioning</span></td>
         <td class="audio"><div class="player"><audio controls preload="none" src="audio/infilling/ex2_truth.wav"></audio></div></td>
         <td class="audio"><div class="player"><audio controls preload="none" src="audio/infilling/ex2_ours.wav"></audio></div></td>
+      </tr>
+    </tbody>
+  </table>
+  </div>
+
+  <!-- ============ STEM-WISE TEXT-TO-MUSIC ============ -->
+  <h2 class="section">Stem-wise text-to-music</h2>
+  <p class="desc">Before editing anything, the stem model has to <em>generate</em> in stems. From a single
+  text description it produces a full mix together with the separate instrument tracks that make it up.
+  Play the mix first, then each stem on its own to hear what the model assigned to each instrument.</p>
+
+  <div class="stem">
+    <h3>Generated example</h3>
+    <p class="cond">Conditioning: <span class="tag">text</span> <span class="prompt">“this is an emotional
+    song with a piano as a main instrument. The voice should be catchy”</span></p>
+
+    <div class="card mix">
+      <div class="label">Full mix</div>
+      <div class="player"><audio controls preload="none" src="audio/stems/t2m_mix.wav"></audio></div>
+    </div>
+
+    <div class="grid">
+      <div class="card">
+        <div class="label">Vocals</div>
+        <div class="player"><audio controls preload="none" src="audio/stems/t2m_vocals.wav"></audio></div>
+      </div>
+      <div class="card">
+        <div class="label">Bass</div>
+        <div class="player"><audio controls preload="none" src="audio/stems/t2m_bass.wav"></audio></div>
+      </div>
+      <div class="card">
+        <div class="label">Drums</div>
+        <div class="player"><audio controls preload="none" src="audio/stems/t2m_drums.wav"></audio></div>
+      </div>
+      <div class="card">
+        <div class="label">Other</div>
+        <div class="player"><audio controls preload="none" src="audio/stems/t2m_other.wav"></audio></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ STEM COMPOSER — EDIT MODES ============ -->
+  <h2 class="section">The stem composer in every edit mode</h2>
+  <p class="desc">The same model, driven through its four modes. Every clip is 10&nbsp;seconds at a frame
+  rate of 50, so an edit window given in frames divides by 50 to give seconds — window
+  <code>123–500</code> means the model wrote everything from 2.46&nbsp;s to the end. All of these are
+  <strong>unprompted</strong>: no text description, the model works from the surrounding audio alone. The
+  blue bar marks the part the model regenerated; the grey part is the original audio it had to stay
+  consistent with. Each row plays the true clip next to the model's version.</p>
+  <div class="table-wrap">
+  <table class="samples">
+    <thead><tr><th>Mode</th><th>Regenerated region</th><th>Ground truth</th><th>Generated (ours)</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><span class="tag">scratch</span><span class="ex-sub"><code>edit_mode=full_causal</code></span></td>
+        <td class="region">
+          <div class="span"><i style="left:0%; right:0%"></i></div>
+          <span class="range">0 s – 10 s</span>
+        </td>
+        <td class="audio"><div class="player"><audio controls preload="none" src="audio/stem_composer/ref_c4ca16.wav"></audio></div></td>
+        <td class="audio"><div class="player"><audio controls preload="none" src="audio/stem_composer/gen_scratch.wav"></audio></div></td>
+      </tr>
+      <tr>
+        <td><span class="tag">continuation</span><span class="ex-sub"><code>edit_mode=continuation</code></span></td>
+        <td class="region">
+          <div class="span"><i style="left:24.6%; right:0%"></i></div>
+          <span class="range">2.46 s – 10 s</span>
+        </td>
+        <td class="audio"><div class="player"><audio controls preload="none" src="audio/stem_composer/ref_81fbea.wav"></audio></div></td>
+        <td class="audio"><div class="player"><audio controls preload="none" src="audio/stem_composer/gen_continuation.wav"></audio></div></td>
+      </tr>
+      <tr>
+        <td><span class="tag">interior</span><span class="ex-sub"><code>edit_mode=interior</code></span></td>
+        <td class="region">
+          <div class="span"><i style="left:14.4%; right:23.8%"></i></div>
+          <span class="range">1.44 s – 7.62 s</span>
+        </td>
+        <td class="audio"><div class="player"><audio controls preload="none" src="audio/stem_composer/ref_382049.wav"></audio></div></td>
+        <td class="audio"><div class="player"><audio controls preload="none" src="audio/stem_composer/gen_interior.wav"></audio></div></td>
+      </tr>
+      <tr>
+        <td><span class="tag">prefix-less</span><span class="ex-sub"><code>edit_mode=prefix_less</code></span></td>
+        <td class="region">
+          <div class="span"><i style="left:0%; right:14.0%"></i></div>
+          <span class="range">0 s – 8.6 s</span>
+        </td>
+        <td class="audio"><div class="player"><audio controls preload="none" src="audio/stem_composer/ref_382049.wav"></audio></div></td>
+        <td class="audio"><div class="player"><audio controls preload="none" src="audio/stem_composer/gen_prefixless.wav"></audio></div></td>
+      </tr>
+    </tbody>
+  </table>
+  </div>
+  <p class="desc"><strong>Reading the modes.</strong> <em>Scratch</em> writes the whole clip with nothing
+  to go on. <em>Continuation</em> is the ordinary causal behaviour: keep the opening, invent the rest.
+  <em>Interior</em> is the contribution — the model rewrites a middle span and has to land back on the
+  original audio that follows it. <em>Prefix-less</em> is the mirror image: the ending is fixed and the
+  model has to invent a beginning that leads into it, something a purely causal model cannot do at all.</p>
+
+  <h3 class="sub">Keeping one stem, regenerating the rest</h3>
+  <p class="desc">Here the edit is restricted to a subset of the stems: the <strong>voice is held
+  fixed</strong> while every other instrument is rewritten inside the window, so the vocal line survives
+  intact over freshly generated accompaniment.</p>
+  <div class="table-wrap">
+  <table class="samples">
+    <thead><tr><th>Task</th><th>Regenerated region</th><th>Ground truth</th><th>Generated (ours)</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><span class="tag">keep voice</span><span class="ex-sub">voice frozen, other stems rewritten</span><span class="ex-sub"><code>edit_mode=interior</code></span></td>
+        <td class="region">
+          <div class="span"><i style="left:14.4%; right:23.8%"></i></div>
+          <span class="range">1.44 s – 7.62 s</span>
+        </td>
+        <td class="audio"><div class="player"><audio controls preload="none" src="audio/stem_composer/ref_19d801.wav"></audio></div></td>
+        <td class="audio"><div class="player"><audio controls preload="none" src="audio/stem_composer/gen_keepvoice.wav"></audio></div></td>
       </tr>
     </tbody>
   </table>
