@@ -83,6 +83,11 @@ td.audio{ min-width:230px; }
 .range{ font-size:.78rem; color:var(--muted); white-space:nowrap; }
 td.region{ min-width:150px; }
 
+/* caveat callout */
+.callout{ background:var(--accent-soft); border:1px solid #d3e0f1; border-left:3px solid var(--accent);
+  border-radius:8px; padding:.8rem 1rem; margin:0 0 1.15rem; font-size:.93rem; color:#334; }
+.callout strong{ color:var(--accent); }
+
 .note{ color:var(--muted); font-size:.9rem; border-top:1px solid var(--line); padding-top:1rem; margin-top:2.75rem; }
 
 @media (max-width:640px){
@@ -326,6 +331,13 @@ td.region{ min-width:150px; }
   <strong>unprompted</strong>: no text description, the model works from the surrounding audio alone. The
   blue bar marks the part the model regenerated; the grey part is the original audio it had to stay
   consistent with. Each row plays the true clip next to the model's version.</p>
+
+  <p class="callout"><strong>Which stem actually changes.</strong> The stem model carries four streams —
+  vocals, bass, drums and <code>other</code> — but in the runs below only the <code>other</code> stem is
+  regenerated inside the edit window. Vocals, bass and drums are carried through from the original clip
+  unchanged. What you are hearing is therefore the edit mechanism operating on a single stream, not a full
+  four-stem rewrite.</p>
+
   <div class="table-wrap">
   <table class="samples">
     <thead><tr><th>Mode</th><th>Regenerated region</th><th>Ground truth</th><th>Generated (ours)</th></tr></thead>
@@ -375,16 +387,17 @@ td.region{ min-width:150px; }
   original audio that follows it. <em>Prefix-less</em> is the mirror image: the ending is fixed and the
   model has to invent a beginning that leads into it, something a purely causal model cannot do at all.</p>
 
-  <h3 class="sub">Keeping one stem, regenerating the rest</h3>
-  <p class="desc">Here the edit is restricted to a subset of the stems: the <strong>voice is held
-  fixed</strong> while every other instrument is rewritten inside the window, so the vocal line survives
-  intact over freshly generated accompaniment.</p>
+  <h3 class="sub">Keeping the voice</h3>
+  <p class="desc">The aim here is to hold the <strong>voice fixed</strong> and rewrite what plays
+  underneath it. The same caveat applies as above: the stream that actually gets regenerated is the
+  <code>other</code> stem, so the vocal line survives intact while the accompaniment changes on that one
+  stream rather than across the whole backing.</p>
   <div class="table-wrap">
   <table class="samples">
     <thead><tr><th>Task</th><th>Regenerated region</th><th>Ground truth</th><th>Generated (ours)</th></tr></thead>
     <tbody>
       <tr>
-        <td><span class="tag">keep voice</span><span class="ex-sub">voice frozen, other stems rewritten</span><span class="ex-sub"><code>edit_mode=interior</code></span></td>
+        <td><span class="tag">keep voice</span><span class="ex-sub">voice kept, <code>other</code> rewritten</span><span class="ex-sub"><code>edit_mode=interior</code></span></td>
         <td class="region">
           <div class="span"><i style="left:14.4%; right:23.8%"></i></div>
           <span class="range">1.44 s – 7.62 s</span>
@@ -396,61 +409,8 @@ td.region{ min-width:150px; }
   </table>
   </div>
 
-  <!-- ==================== STEMS ==================== -->
-  <h2 class="section">Per-stem editing</h2>
-  <p class="desc">Composed with MusicGen-Stem's per-instrument codebooks, the infiller regenerates a
-  single stem inside a chosen window while every other stem is held fixed — steered by a melody line or
-  a text description. The examples below edit the bass, the melody, and the vocal stem in turn.</p>
-
-  <div class="stem">
-    <h3>Bass stem</h3>
-    <p class="cond">Conditioning: <span class="tag">text</span> <span class="prompt">“a deep, groovy synth bassline”</span></p>
-    <div class="table-wrap">
-    <table class="samples">
-      <thead><tr><th>Original mix</th><th>Regenerated stem</th><th>New mix (ours)</th></tr></thead>
-      <tbody><tr>
-        <td class="audio"><div class="player"><audio controls preload="none" src="audio/stems/bass_original.mp3"></audio></div></td>
-        <td class="audio"><div class="player"><audio controls preload="none" src="audio/stems/bass_stem.mp3"></audio></div></td>
-        <td class="audio"><div class="player"><audio controls preload="none" src="audio/stems/bass_newmix.mp3"></audio></div></td>
-      </tr></tbody>
-    </table>
-    </div>
-  </div>
-
-  <div class="stem">
-    <h3>Melody stem</h3>
-    <p class="cond">Conditioning: <span class="tag">melody</span> — target melody line provided below</p>
-    <div class="table-wrap">
-    <table class="samples">
-      <thead><tr><th>Target melody (input)</th><th>Original mix</th><th>Regenerated stem</th><th>New mix (ours)</th></tr></thead>
-      <tbody><tr>
-        <td class="audio"><div class="player"><audio controls preload="none" src="audio/stems/melody_melody.mp3"></audio></div></td>
-        <td class="audio"><div class="player"><audio controls preload="none" src="audio/stems/melody_original.mp3"></audio></div></td>
-        <td class="audio"><div class="player"><audio controls preload="none" src="audio/stems/melody_stem.mp3"></audio></div></td>
-        <td class="audio"><div class="player"><audio controls preload="none" src="audio/stems/melody_newmix.mp3"></audio></div></td>
-      </tr></tbody>
-    </table>
-    </div>
-  </div>
-
-  <div class="stem">
-    <h3>Vocal stem</h3>
-    <p class="cond">Conditioning: <span class="tag">text</span> <span class="prompt">“a soft female vocal humming a gentle melody”</span></p>
-    <div class="table-wrap">
-    <table class="samples">
-      <thead><tr><th>Original mix</th><th>Regenerated stem</th><th>New mix (ours)</th></tr></thead>
-      <tbody><tr>
-        <td class="audio"><div class="player"><audio controls preload="none" src="audio/stems/voice_original.mp3"></audio></div></td>
-        <td class="audio"><div class="player"><audio controls preload="none" src="audio/stems/voice_stem.mp3"></audio></div></td>
-        <td class="audio"><div class="player"><audio controls preload="none" src="audio/stems/voice_newmix.mp3"></audio></div></td>
-      </tr></tbody>
-    </table>
-    </div>
-  </div>
-
-  <p class="note">Audio examples are being generated; the empty players above are placeholders and will
-  play once the clips are dropped into <code>audio/</code>. See <code>README.md</code> for the expected
-  filenames.</p>
+  <p class="note">Every player on this page is backed by real generated audio. Clips live under
+  <code>audio/</code> in this repository.</p>
 
 </div>
 </body>
