@@ -102,31 +102,11 @@ td.audio{ min-width:230px; }
   <!-- ==================== ABSTRACT ==================== -->
   <section class="abstract">
     <h2>Abstract</h2>
-    <p>Today's music generation models can write a convincing ten-second clip, but they cannot
-    revise one. They compose strictly left to right, so they can extend a passage but never rewrite a
-    section in the middle while keeping what follows it intact — and they only ever see ten to thirty
-    seconds at a time, far less than a finished piece.</p>
+    <p> Autoregressive music generation models produce convincing clips but offer composers no way to revise one: a causal decoder can only continue a prompt, never regenerate an interior window while honoring what comes after it, and every such model is bounded to a context of thirty seconds, far short of a finished piece. While several methods proposed to extend the generation up to a 3 min clip, it cannot able to regenerate only a part of the sample.</p>
 
-    <p>We treat editing as <strong>infilling</strong>: regenerating an interior window while listening to
-    both the music before it and the music after it. Reaching that takes a single change to the model —
-    an attention mask that lets the edited window look at the whole context, past and future, while every
-    other position keeps its usual left-to-right view. Paired with a matching training recipe, this turns
-    an ordinary MusicGen-style model into a native editor without altering how audio is sampled or
-    decoded, and it collapses back to the original model when no edit is asked for.</p>
+    </p>This report casts editing as infilling --- sampling an interior window conditioned on both its prefix and its suffix --- and reaches it with a single architectural change: an asymmetric span attention mask that lets the edit window attend to the entire context, past and future, while every other position keeps its ordinary causal view. Combined with an edit-mode training recipe, this turns a causal musicgen-style model into a native infiller without touching sampling, guidance, or decoding, and reduces exactly to the original causal model as a special case. On top of this mechanism we build a composer's control layer: a cosine context schedule dialing how strongly the edit adheres to each side of its context, melody conditioning via a chromagram of the edit window, and a dataset-token control routed through adaptive layer normalization.</p>
 
-    <p>On top of that we add the controls a composer would actually want: a dial for how closely the edit
-    should follow the music on either side of it, a melody line to guide the new material, and a dataset
-    token that steers the output toward a chosen style. The same mask, applied to MusicGen-Stem's
-    per-instrument codebooks, also lets a single instrument be rewritten inside a single time window while
-    the rest of the mix stays untouched. Alternating this editor's continuation and infilling modes then
-    builds pieces longer than the model's own context window — the goal this internship set out to
-    reach.</p>
-
-    <p>Every model here is trained from scratch on two 48&nbsp;GB GPUs, on small and deliberately
-    mismatched corpora, and compared against causal baselines and public checkpoints. The samples on this
-    page let you hear each mechanism at work. They confirm the method behaves as predicted, while making
-    clear how much stays provisional at this scale and sample size — a deliberate trade-off for a
-    technique meant to stay within reach of anyone without an industrial compute budget.</p>
+    </p>The same mask, composed with a stream selection over musicgen-stem's per-instrument codebooks, further yields a stem-by-time editor that regenerates one chosen instrument inside one chosen window, and chaining that editor's own continuation mode with its own infilling pass reaches compositions longer than any single context window --- this internship's culminating goal. Every model is trained from scratch on two 48\,GB GPUs, on small, deliberately mismatched corpora, and evaluated against causal and public-checkpoint baselines.</p>
   </section>
 
   <!-- ================================================================
