@@ -203,7 +203,7 @@ td.region{ min-width:150px; }
   </div>
 
   <!-- ==================== SCHAEFFER (AdaLN) ==================== -->
-  <h2 class="section">Dataset steering — Schaeffer token (AdaLN)</h2>
+  <h2 class="section">Dataset steering — source token (AdaLN)</h2>
   <p class="desc">Forcing the <code>schaeffer</code> dataset token — routed through adaptive layer
   normalisation (AdaLN) — steers the model toward a tiny target dataset (here called
   <code>schaeffer</code>). The point is that it adopts that dataset's character
@@ -255,6 +255,40 @@ td.region{ min-width:150px; }
         <td><span class="ex">Example 2</span></td>
         <td class="audio"><div class="player"><audio controls preload="none" src="audio/schaeffer/continuation/ex2_ref.mp3"></audio></div></td>
         <td class="audio"><div class="player"><audio controls preload="none" src="audio/schaeffer/continuation/ex2_ours.mp3"></audio></div></td>
+      </tr>
+    </tbody>
+  </table>
+  </div>
+
+  <h3 class="sub">Switching the source token — <code>schaeffer</code> vs <code>shs</code></h3>
+  <p class="desc">The AdaLN token is a dial, not a fixed setting. The model carries one token per training
+  corpus — <code>schaeffer</code> for the tiny sound-object dataset used above, <code>shs</code> for the
+  large music corpus — and the caption stays untouched between the two columns below. Whatever differs is
+  what the token alone controls: the same description is read once as a sound object and once as a piece of
+  music. Every clip is 10&nbsp;s, text-conditioned only.</p>
+  <div class="table-wrap">
+  <table class="samples">
+    <thead><tr><th>Text prompt</th><th><code>schaeffer</code> token</th><th><code>shs</code> token</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><span class="prompt">“Inharmonic band of sine waves with different amplitude envelopes and offsets of harmonics. cold and evil”</span></td>
+        <td class="audio"><div class="player"><audio controls preload="none" src="audio/source_mode/ex1_schaeffer.wav"></audio></div></td>
+        <td class="audio"><div class="player"><audio controls preload="none" src="audio/source_mode/ex1_shs.wav"></audio></div></td>
+      </tr>
+      <tr>
+        <td><span class="prompt">“Irregolar and repetitive percussive and resonant impacts. Like a metal bottle hit with a metal object. Wobbly feel”</span></td>
+        <td class="audio"><span class="dash">—</span></td>
+        <td class="audio"><div class="player"><audio controls preload="none" src="audio/source_mode/ex2_shs.wav"></audio></div></td>
+      </tr>
+      <tr>
+        <td><span class="prompt">“This is a soundtrack piece in the easy listening genre featuring a piano as the main instrument, conveying a Christmas mood”</span></td>
+        <td class="audio"><div class="player"><audio controls preload="none" src="audio/source_mode/ex3_schaeffer.wav"></audio></div></td>
+        <td class="audio"><span class="dash">—</span></td>
+      </tr>
+      <tr>
+        <td><span class="prompt">“This track is a lively jazz fusion piece featuring piano and guitar, exuding an upbeat, energetic mood”</span></td>
+        <td class="audio"><div class="player"><audio controls preload="none" src="audio/source_mode/ex4_schaeffer.wav"></audio></div></td>
+        <td class="audio"><span class="dash">—</span></td>
       </tr>
     </tbody>
   </table>
